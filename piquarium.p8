@@ -4,6 +4,8 @@ __lua__
 function _init()
  cls()
  aquarium = {}
+ bubbles = {}
+ i = 0
 end
 
 function makefish()
@@ -16,6 +18,13 @@ function makefish()
  fish.vy = rnd(2)>1 and rnd(2) or rnd(2)-3
  fish.i = 0
  
+ function fish:bubble()
+  --local bubbles={}
+ -- for i=0,rnd(5),1 do
+   circ(fish.x+8,fish.y+8,rnd(2)+1,6)
+ -- end
+ end
+
  function fish:flap()
   if fish.i==30 then
    fish.spr += 2
@@ -56,6 +65,7 @@ function makefish()
   fish:move()
   fish:flap()
   fish:despawn()
+  fish:bubble()
  end
  
  return fish
@@ -64,17 +74,23 @@ end
 
 function _draw()
  cls() 
+ i = i < 100 and i+1 or 0
  map(0,0,0,0,128,128,0)
 
  for f in all(aquarium) do
   f:draw()
  end
  
+ addbubbles()
+ for b in all(bubbles) do
+  b:draw()
+ end 
+
+ 
  --print("count:"..count(aquarium),0,110,7)
 end
 
 function _update60()
-
  --wait a little before respawn fish
  if rnd(100)>99 then
   if count(aquarium) < 6 then
@@ -85,7 +101,28 @@ function _update60()
  for f in all(aquarium) do
   f:update60()
  end
- 
+end
+
+function addbubbles()
+ if rnd(4400)<10 then
+  local pos = rnd(128)
+  for i=0,rnd(8)+1,1 do
+   local bubble = {}
+   bubble.x = pos+rnd(6)-3
+   bubble.y = 120+i*3
+   bubble.vy = (rnd(3)+3)/8
+   bubble.col = 6
+   bubble.r = rnd(3)+1
+   function bubble:draw()
+    bubble.y -= bubble.vy
+    if bubble.y < 0 then  
+     del(bubbles,bubble)
+    end
+    circ(bubble.x,bubble.y,bubble.r,bubble.col)
+   end
+   add(bubbles,bubble)
+  end
+ end
 end
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
