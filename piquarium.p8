@@ -4,12 +4,15 @@ __lua__
 function _init()
  --clear initial screen
  cls()
+  --init critter metatable
+ critter = makecritter()
  --init tables
  aquarium = {}
  bubbles = {}
  crabs = {}
+ nostalgia = {}
  --fis variety lookup
- variety = {0,4,8,12,32,96}
+ variety = {0,4,8,12,32,36,40}
  -- init plants y position
  planty = rnd(110)+5
  --set bright green transparent instead of black
@@ -39,6 +42,11 @@ function _draw()
   f:draw()
  end
 
+  --draw nostalgia
+ for n in all(nostalgia) do
+  n:draw()
+ end 
+
  --draw bubbles
  for b in all(bubbles) do
   b:draw()
@@ -48,20 +56,26 @@ function _draw()
 end
 
 function _update60()
- --wait a little before respawn fish
- if rand(0.2) then
-  if count(crabs)<1 then
-   add(crabs,makecrab())
-  end
- end
-
- if rand(1) then
+ 
+ if rand(1) then--wait a little before respawn fish
   if count(aquarium)<6 then
    add(aquarium,makefish())
   end
  end
  
- if rand(0.15) then
+ if rand(0.2) then --wait a little more before respawn crab
+  if count(crabs)<1 then
+   add(crabs,makecrab())
+  end
+ end
+  
+ if rand(0.01) then --wait for hell to freeze over before respawn nostalgia
+  if count(nostalgia)<1 then
+   add(nostalgia,makenostalgia())
+  end
+ end
+ 
+ if rand(0.15) then --sparkle some bubbles here and then
   makebubbles()
  end
  
@@ -69,29 +83,47 @@ function _update60()
   f:update60()
  end
  
+ for n in all(nostalgia) do
+  n:update60()
+ end
+ 
  for c in all(crabs) do
   c:update60()
  end
-
- bubblesnd()
  
+end
+
+--creates critter
+function makecritter()
+ local critter={}
+ critter.__index=critter
+ critter.i=0
+ critter.x=0
+ critter.y=0
+ critter.vx=0
+ critter.vy=0
+ critter.spr=0
+ critter.flip=false
+ critter.snd=0
+ return critter
 end
 
 --creates fish
 function makefish()
- local r = flr(rnd(5)+1)
+ local r = flr(rnd(#variety)+1)
  local fish = {}
- fish.spr = variety[flr(rnd(6)+1)]
- fish.y = rnd(70)+30
+ setmetatable(fish,critter)
+ fish.spr = variety[r]
+ fish.snd = r
  fish.flip = rand(50) and true or false
  fish.x = fish.flip and -16 or 128
+ fish.y = rnd(70)+30
  fish.vx = fish.flip and rnd(3)+1 or rnd(3)-4
  fish.vy = rand(50) and rnd(2) or rnd(2)-3
- fish.i = 0
  
  function fish:bubble()
   if rand(0.1) then 
-   if rand(50) then sfx(1) else sfx(2) end
+   sfx(fish.snd)
   end
  end
 
@@ -108,11 +140,6 @@ function makefish()
  function fish:move()
    fish.x+=fish.vx/15
    fish.y+=fish.vy/20
-   if fish.i == 45 and rand(50) then
-   -- fish.vx = 0
-   elseif fish.i == 60 then
-   -- fish.vx = fish._spd
-   end
    
    if rand(1) then
     fish.vy = fish.vy>2 and fish.vy-2 or (rnd(2)-rnd(2))
@@ -144,13 +171,13 @@ end
 --creates crab
 function makecrab()
  local crab = {}
+ setmetatable(crab,critter)
  crab.x = 128
  crab.vx = -2
- crab.y = 104
+ crab.y = 103
  crab.spr = 44
- crab.i = 0
  crab.wait = 0 
- 
+
  function crab:update60()
   crab.i += 1
   
@@ -183,6 +210,13 @@ function makecrab()
    del(crabs,crab)
   end
   
+  --vary speed
+  if(rand(10)) then
+   crab.vx=-1
+   else
+   crab.vx=-2
+  end
+  
  end
   
  function crab:draw()
@@ -213,15 +247,38 @@ function makebubbles()
   end
 end
 
+--creates nostalgia
+function makenostalgia()
+ local n = {}
+ setmetatable(n,critter)
+ n.x = 168
+ n.y = rnd(30)
+ n.vx = -3
+ n.vy = 1
+ n.spr = 96
+ function n:draw()
+   spr(n.spr,n.x,n.y,2,2)
+ end
+ function n:update60()
+  n.i += 1
+  n.y += n.vy/10
+  n.x += n.vx/10
+  if n.x < -20 then del(nostalgia,n) end
+  if n.i == 10 then
+   n.spr = 98
+  elseif n.i == 20 then
+   n.spr= 96
+   n.i = 0
+  end
+  
+ end
+ return n
+end
+
 --draws plants
 function drawplants()
  spr(78,planty,104,2,2)
  spr(76,planty-8,100,2,2)
-end
-
---plays bubbles sound
-function bubblesnd()
- --if rand(0.26) then sfx(3) end
 end
 
 --gives random chance of i%
@@ -246,22 +303,22 @@ bbb69f79575fa99bbbb69f79575fa99bbbbb28eee22bbbbbbbbb28eee22bbbbbbbb9ccccccdddc9b
 bbbbf79576f9aa4bbbbbf7957699aa4bbbbbb8bb821bbbbbbbbbb8bb821bbbbbbbbb99ddddddcc9bbbbb99ddddddcc9bbbbbb1bbbbb11bbbbbbbb1bbbbb11bbb
 bbbbbb6df9f994bbbbbbbb6df99994bbbbbbbebb21bbbbbbbbbbbbeb21bbbbbbbbbbbf9bbbb1cfbbbbbbbf9bbbb1cfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 bbbbbbbbd99bbbbbbbbbbbbbbddbbbbbbbbbbbbbbebbbbbbbbbbbbbbbebbbbbbbbbbbbffbbbbbbbbbbbbbbffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbbbbbbbbb333b5bbbbbbbbbbb333b5bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4bbbbbb4bbbbbbbb4bbbbbb4bbbb
-bbbbbbbbbbc3335bbbbbbbbbbbc3335bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb44bbbbbb44bbbbbb444bbbb444bbb
-b333b5bbbbbcccb3b333b5bbbbbcccb3bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4454bbbb4544bbbb445bbbbbb544bb
-c3335bbbbbbbbbbbc3335bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb445bbbbbbbb544bb445bbbbbbbb544b
-bcccbcbb333b5bbbbcccbcbb333b5bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb444bb4bb4bb444bb444b4bbbb4b444b
-bbbbbbbc3335bbbbbbbbbbbc3335bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb54bb4bbbb4bb45bb54bb4bbbb4bb45b
-bbbbbbbbcccbcbbbbbbbbbbbcccbcbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4bbb4bb4bbb4bbbb4bbb4bb4bbb4bb
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4b414414b4bbbbbb4b414414b4bbb
-bbbbbbbbbb333b5bbbbbbbbbbb333b5bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb44444444bbbbbbbb44444444bbbb
-b333b5bbbc3335bbb333b5bbbc3335bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4b55444455b4bbbb4b55444455b4bb
-c3335bbbbbcccb3bc3335bbbbbcccb3bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5b4444444444b5bb5b4444444444b5b
-bcccb3bbbbbbbbbbbcccb3bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5444444445bbbbbb5444444445bbb
-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb44b54544545b44bbb4b54544545b4bb
-bbbbbb333b5bbbbbbbbbbb333b5bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5bb4bb4554bb4bb5b4b4bb4554bb4b4b
-bbbbbc3335bbbbbbbbbbbc3335bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb44bb4bbbb4bb44b5b4bb4bbbb4bb4b5
-bbbbbbcccbcbbbbbbbbbbbcccbcbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5bbb5bbbbbb5bbb5bb5bb5bbbb5bb5bb
+bbbbbbbbbbb333b3bbbbbbbbbbb333b3bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbff7bbbbbbbbbbbbbff7bbbbb9bbbbbb9bbbbbbbb9bbbbbb9bbbb
+bbbbbbbbbbc3335bbbbbbbbbbbc3335bbbbbbbbbbf9f6bbbbbbbbbbbbf9f6bbbbbbbbbbbbbf77bbbbbbbbbbbbbf77bbbbbb44bbbbbb99bbbbbb445bbbb599bbb
+b333b5bbbbbcccbcb333b5bbbbbcccbcbbbbbbbb495abbbbbbbbbbbb495abbbbbbbbbbbbf777bbbbbbbbbbbbf777bbbbbb4455bbbb5549bbbb445bbbbbb549bb
+c3335bbbbbbbbbbbc3335bbbbbbbbbbbbbbbbbb49499abbbbbbbbbb49499abbbbbbbbbbf777bbbbbbbbbbbbf777bbbbbb945bbbbbbbb549bb945bbbbbbbb549b
+bcccbcbb333b3bbbbcccbcbb333b3bbbbbbbbbdbbb94abbbbbbbbbdbbb94abbbbbbbbbdd6dbbbbbbbbbbbbdd6dbbbbbbb944bb5bb5bb444bb944b5bbbb5b444b
+bbbbbbbc3335bbbbbbbbbbbc3335bbbbbbbbbbbbbb499bbbbbbbbbbbbb499bbbbbbb605f7f0dbbbbbbbb605f7f0dbbbbb54bb4bbbb4bb4dbb54bb4bbbb4bb4db
+bbbbbbbbcccbcbbbbbbbbbbbcccbcbbbbbbbbbbbb994bbbbbbbbbbbbb994bbbbbbb605f7707fdbbbbbb605f7707fdbbbbb4bbb4bb4bbb4bbbb4bbb4bb4bbb4bb
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb6499bbbbbbbbbbbb6499bbbbbb6055f70577fdb9bb6055f70577fdb9bbb4b414914b4bbbbbb4b414914b4bbb
+bbbbbbbbbb333b5bbbbbbbbbbb333b5bbbbbbbb6994bbbbbbbbbbbb6994bbbbbbb705f7705777f97bb705f7705777f97bbbb44944944bbbbbbbb44944944bbbb
+b333b3bbbc3335bbb333b3bbbc3335bbbbbbbbd449babbbbbbbbbbd449babbbbb6205f7705577f7ab6205f7605577f7abb4b49544599b4bbbb4b49544599b4bb
+c3335bbbbbcccbcbc3335bbbbbcccbcbbbbbbbd994aaabbbbbbbbbd994aaabbb66d55f76705777ba66d55f6f705777bab5b4554444554b5bb5b4554444554b5b
+bcccbcbbbbbbbbbbbcccbcbbbbbbbbbbbbbbbbbd49aafbbbbbbbbbbd49aafbbbbd05f76f70557bbbbd05f7ff70557bbbbbbd444944449bbbbbbd444944449bbb
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb949fbbbbbbbbbabb949fbbbbbb0577f7770556bbbb057777770555bbb44bd4954949b44bbb4bd4954949b4bb
+bbbbbb333b5bbbbbbbbbbb333b5bbbbbbbbbbbabb99bbbbbbbbbbdbbb99bbbbbbbb057777705556bbbb057777705555b5bb4bbd995bb4bb5b4b4bbd995bb4b4b
+bbbbbc3335bbbbbbbbbbbc3335bbbbbbbbbbbdbb94bbbbbbbbbbbbd994bbbbbbbbb6dbb6677d556bbbb6dbb6677d55dbb44bb4bbbb4bb44b5b4bb4bbbb4bb4b5
+bbbbbbcccbcbbbbbbbbbbbcccbcbbbbbbbbbbbd94bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbddbbbbbbbbbbbbbbddbb5bbb5bbbbbb5bbb5bb5bb5bbbb5bb5bb
 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5bbbbbbbbbbbbbbbb3bbbbbb3bbb
 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5bbbbbb3bbbbbbbbbbb3bbbbb3bbb
 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb5bbb3333bbbb5bbbbbbb3bbbbb3bbb
@@ -278,16 +335,16 @@ bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 99949949449494999499494494949949bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb3b53bbbbbbbb35b3bb53bbbbbb
 99999999999999999999999999999999bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb3b3bbbbbbbbb35b3bb53bbbbbb
 99999699999999999999999999999999bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb353bbbbbbbbbb53bb53bbbbbbb
-bbbbbbf777bbbbbbbbbbbbf777bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbbbf7777bbbbbbbbbbbf7777bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbbb77dd61bbbbbbbbbb77dd61bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbbbbbf777bbbbbbbbbbbbbff7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbbbbf7777bbbbbbbbbbbff777bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbbbb77dd61bbbbbbbbbbf7dd61bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 bbbbbdd666661bbbbbbbbdd666661bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbbbd66885566f7bbbbbd66885566f7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbb766855887f77bbbb766855887f77bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bb766858877f777bbb766858877f777bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bb768586755f771bbb768586755f771bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbd7686755f7701bbbd7686755f7701bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-bbdd767555f7501bbbdd767555f7501bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbbbd66885566f7bbbbbd668855661bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbb766855887f77bbbb7668558877ffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bb766858877f777bbb766858877fff7bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bb768586755f771bbb768586755ff77bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbd7686755f7701bbbd7686755f7771bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbdd767555f7501bbbdd767555f7701bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 bbd0d7055555501bbbd0d7055555501bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 bbd50d00555501bbbbd50d00555501bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 bbdddd0005501bbbbbdddd0005501bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
@@ -396,14 +453,14 @@ __map__
 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f
 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f
 __sfx__
-000200001e03520030220300d1000d1002000521000190001f0051f0501e0501e050140001900501000010001b0501c0501c0051f0001c0351d0501e0501500015000150001400014000140001d1020d1021f002
+000300001154113531185110d1000d10020005210001900003005020000100001000140001900501000010001b0001c0001c0051f0001c0051d0001e0001500015000150001400014000140001d1020d1021f002
 000300000b03116541135211050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0003000017031145211c531015001f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00020000170211803016050000000000000000190411a050190502500000000000000000000000000000000015001140001600000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000300001805116520000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00030000185511a521185411d53114511000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000300001154113531185110d1000d10020005210001900003005020000100001000140001900501000010001b0001c0001c0051f0001c0051d0001e0001500015000150001400014000140001d1020d1021f002
+000500000a0510d5510b5510d5010e550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
