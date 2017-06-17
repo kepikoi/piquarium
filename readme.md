@@ -2,7 +2,7 @@ PICO-8 Aquatic Realm
 ====================
 
 ## That classic fish screensaver for your [PICO-8](https://www.lexaloffle.com/pico-8.php)
-[Screenshot](https://github.com/kepikoi/piquarium/raw/master/screenshot.gif)
+![Screenshot](https://github.com/kepikoi/piquarium/raw/master/screenshot.gif)
 ---
 
 
